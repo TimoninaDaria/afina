@@ -20,7 +20,9 @@ public:
     SimpleLRU(size_t max_size = 1024) : _max_size(max_size), _current_size(0) {}
 
     ~SimpleLRU() 
-    {
+    {   
+	_lru_index.clear();
+
         lru_node* for_removing;
         
         if (_lru_head){
@@ -38,8 +40,6 @@ public:
             for_removing = prev;
         }
         _lru_head.reset();
-        
-        _lru_index.clear();
     }
 
     // Implements Afina::Storage interface
@@ -56,8 +56,10 @@ public:
 
     // Implements Afina::Storage interface
     bool Get(const std::string &key, std::string &value) override;
-
+    
 private:
+    void _cleaning(std::size_t delta);
+
     struct lru_node;
 
 
@@ -71,7 +73,10 @@ private:
         lru_node* prev;
         std::unique_ptr<lru_node> next;
     };
-
+    
+    void _to_tail(lru_node* node);
+    void _add_node(const std::string &key, const std::string &value);
+    void _set_value(lru_node& node, const std::string &value);
     // Maximum number of bytes could be stored in this cache.
     // i.e all (keys+values) must be less the _max_size
     std::size_t _max_size;
