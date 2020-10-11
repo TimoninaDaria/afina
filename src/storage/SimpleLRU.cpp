@@ -44,9 +44,6 @@ void SimpleLRU::_to_tail(lru_node* node){
 	_lru_head.release();
         _lru_head.reset(next);	
     } 
-
-return;
-
 }
 
 bool SimpleLRU::Put(const std::string &key, const std::string &value) { 
