@@ -29,7 +29,7 @@ void SimpleLRU::_to_tail(lru_node* node){
     lru_node* prev = node->prev;    
    
     if (node->key != _lru_head->key){
-        node->next->prev = prev;
+        next->prev = prev;
 	prev->next.release();
 	prev->next.reset(next);
 	_lru_head->prev->next.reset(node);
