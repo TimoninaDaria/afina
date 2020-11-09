@@ -155,7 +155,6 @@ void ServerImpl::OnRun() {
                     pc->DoWrite();
                 }
             }
-
             // Does it alive?
             if (!pc->isAlive()) {
                 if (epoll_ctl(epoll_descr, EPOLL_CTL_DEL, pc->_socket, &pc->_event)) {
@@ -164,6 +163,7 @@ void ServerImpl::OnRun() {
 
                 close(pc->_socket);
                 pc->OnClose();
+
 
                 delete pc;
             } else if (pc->_event.events != old_mask) {
@@ -207,7 +207,7 @@ void ServerImpl::OnNewConnection(int epoll_descr) {
         }
 
         // Register the new FD to be monitored by epoll.
-        Connection *pc = new(std::nothrow) Connection(infd);
+        Connection *pc = new (std::nothrow) Connection(infd, pStorage);
         if (pc == nullptr) {
             throw std::runtime_error("Failed to allocate connection");
         }
