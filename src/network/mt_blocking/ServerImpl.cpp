@@ -31,18 +31,23 @@ namespace MTblocking {
 ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl) : Server(ps, pl) {}
 
 // See Server.h
-ServerImpl::~ServerImpl() {}
+ServerImpl::~ServerImpl() {
+    
+    Stop();
+    Join();
+
+}
 
 void ServerImpl::One_thread_works(int client_socket) {
 
-    std::size_t arg_remains;
+    std::size_t arg_remains = 0;
     std::shared_ptr<Execute::Command> command_to_execute;
     Protocol::Parser parser;
     std::string argument_for_command;
 
     try {
         int readed_bytes = -1;
-        char client_buffer[4096];
+        char client_buffer[4096] = "";
         while ((readed_bytes = read(client_socket, client_buffer, sizeof(client_buffer))) > 0) {
             _logger->debug("Got {} bytes from socket", readed_bytes);
 
@@ -121,10 +126,10 @@ void ServerImpl::One_thread_works(int client_socket) {
     }
 
         // We are done with this connection
-    close(client_socket);
     std::lock_guard<std::mutex> lock(_mutex);
+    close(client_socket);
     _clients.erase(client_socket);
-    if (_clients.size() == 0) {
+    if (!running && _clients.size() == 0) {
         _stop.notify_all();
     }
 }
@@ -187,7 +192,6 @@ void ServerImpl::Stop() {
 void ServerImpl::Join() {
     assert(_thread.joinable());
     _thread.join();
-    close(_server_socket);
     std::unique_lock<std::mutex> lock(_mutex);
     while (_clients.size() != 0) {
         _stop.wait(lock);
@@ -238,7 +242,7 @@ void ServerImpl::OnRun() {
         }
         {
             std::lock_guard<std::mutex> lock(_mutex);
-            if (_clients.size() < _n_workers) {
+            if (_clients.size() < _n_workers && running) {
                 std::thread worker(&ServerImpl::One_thread_works, this, client_socket);
                 worker.detach();
                 _clients.insert(client_socket);
@@ -262,6 +266,7 @@ void ServerImpl::OnRun() {
 
     // Cleanup on exit...
     _logger->warn("Network stopped");
+    close(_server_socket);
 }
 
 } // namespace MTblocking
