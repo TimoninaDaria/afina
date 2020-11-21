@@ -186,6 +186,7 @@ void ServerImpl::Stop() {
 // See Server.h
 void ServerImpl::Join() {
     assert(_thread.joinable());
+    if (!_thread.joinable()) { return; }
     _thread.join();
     close(_server_socket);
     std::unique_lock<std::mutex> lock(_mutex);
